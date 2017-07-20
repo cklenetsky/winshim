@@ -11,92 +11,6 @@ import (
 	"strings"
 )
 
-type parameterDefinition struct {
-	name     string
-	dataType string
-}
-
-type functionDefinition struct {
-	returnType string
-	name       string
-	attribute  string
-	parameters []parameterDefinition
-}
-
-func (f functionDefinition) String() string {
-	var b bytes.Buffer
-	b.WriteString(fmt.Sprintf("%s ", f.returnType))
-	if f.attribute != "" {
-		b.WriteString(fmt.Sprintf("__%s ", f.attribute))
-	}
-	b.WriteString(f.name)
-	b.WriteRune('(')
-	if len(f.parameters) == 0 {
-		b.WriteString("void")
-	} else {
-		for i, p := range f.parameters {
-			b.WriteString(p.dataType)
-			if !strings.HasSuffix(p.dataType, "*") {
-				b.WriteRune(' ')
-			}
-			b.WriteString(p.name)
-			if i < len(f.parameters)-1 {
-				b.WriteString(", ")
-			}
-		}
-	}
-	b.WriteRune(')')
-	return b.String()
-}
-
-func (f functionDefinition) FunctionPointerTypedefName() string {
-	return fmt.Sprintf("f_%s", f.name)
-}
-
-func (f functionDefinition) FunctionPointerTypedef() string {
-	var b bytes.Buffer
-	b.WriteString(fmt.Sprintf("typedef %s (", f.returnType))
-	if f.attribute != "" {
-		b.WriteString(fmt.Sprintf("__%s ", f.attribute))
-	}
-	b.WriteString(fmt.Sprintf("*%s)(", f.FunctionPointerTypedefName()))
-	if len(f.parameters) == 0 {
-		b.WriteString("void")
-	} else {
-		for i, p := range f.parameters {
-			b.WriteString(p.dataType)
-			if !strings.HasSuffix(p.dataType, "*") {
-				b.WriteRune(' ')
-			}
-			b.WriteString(p.name)
-			if i < len(f.parameters)-1 {
-				b.WriteString(", ")
-			}
-		}
-	}
-	b.WriteString(");")
-	return b.String()
-}
-
-func (f functionDefinition) ShimFunction() string {
-	var b bytes.Buffer
-
-	b.WriteString(f.String())
-	b.WriteString(" {\n")
-	b.WriteString(fmt.Sprintf("    return fp%s(", f.name))
-	if len(f.parameters) > 0 {
-		for i, p := range f.parameters {
-			b.WriteString(p.name)
-			if i < len(f.parameters)-1 {
-				b.WriteString(", ")
-			}
-		}
-	}
-	b.WriteString(");\n")
-	b.WriteString("}\n")
-	return b.String()
-}
-
 func readAST(data []byte) []string {
 	uncolored := regexp.MustCompile(`\x1b\[[\d;]+m`).ReplaceAll(data, []byte{})
 	return strings.Split(string(uncolored), "\n")
@@ -146,7 +60,7 @@ func Start(inputFile string, outputFile string) error {
 
 	lines := readAST(astPP)
 
-	functions := make([]functionDefinition, 0)
+	functions := make([]shimFunctionDefinition, 0)
 	index := 0
 
 	// 4. Parse functions and their parameters
@@ -168,7 +82,7 @@ func Start(inputFile string, outputFile string) error {
 			funcMatches := functionRegex.FindStringSubmatch(line)
 			if len(funcMatches) > 2 {
 				inFunction = true
-				functions = append(functions, functionDefinition{name: funcMatches[1],
+				functions = append(functions, shimFunctionDefinition{name: funcMatches[1],
 					returnType: strings.TrimSpace(funcMatches[2])})
 				attribute := functionAttributeRegex.FindStringSubmatch(line)
 				if len(attribute) > 1 {
