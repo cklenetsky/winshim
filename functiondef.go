@@ -19,7 +19,9 @@ type shimFunctionDefinition struct {
 }
 
 const functionTypePrefix = "f_"
+const functionTypeSuffix = "_t"
 const functionPointerVarPrefix = "fp"
+const functionPointerVarSuffix = ""
 
 func (f shimFunctionDefinition) FunctionSignature() string {
 	var b bytes.Buffer
@@ -56,7 +58,7 @@ func (f shimFunctionDefinition) FunctionPointerName() string {
 }
 
 func (f shimFunctionDefinition) FunctionPointerTypedefName() string {
-	return fmt.Sprintf("%s%s", functionTypePrefix, f.name)
+	return fmt.Sprintf("%s%s%s", functionTypePrefix, f.name, functionTypeSuffix)
 }
 
 func (f shimFunctionDefinition) FunctionPointerTypedef() string {

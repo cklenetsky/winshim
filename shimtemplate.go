@@ -74,7 +74,6 @@ func writeFunctionPointerVarTypes(functions []shimFunctionDefinition, output io.
 	var b bytes.Buffer
 
 	for _, f := range functions {
-
 		b.WriteString(f.FunctionPointerTypedef())
 		b.WriteRune('\n')
 	}
@@ -88,7 +87,6 @@ func writeFunctionPointerVars(functions []shimFunctionDefinition, output io.Writ
 	var b bytes.Buffer
 
 	for _, f := range functions {
-
 		b.WriteString(fmt.Sprintf("static %s %s = NULL;\n", f.FunctionPointerTypedefName(), f.FunctionPointerName()))
 	}
 	_, err := output.Write(b.Bytes())
@@ -100,7 +98,7 @@ func writeGlobalHandleVar(output io.Writer) error {
 	return err
 }
 
-func writeInitFunction(moduleName string, dllFilename string, functions []shimFunctionDefinition, output io.Writer) error {
+func writeInitFunction(moduleName string, functions []shimFunctionDefinition, output io.Writer) error {
 	var b bytes.Buffer
 
 	b.WriteString(fmt.Sprintf(initFunctionStart, moduleName))
@@ -148,7 +146,6 @@ func writeShimFunctions(functions []shimFunctionDefinition, output io.Writer) er
 	var b bytes.Buffer
 
 	for _, f := range functions {
-		b.WriteRune('\n')
 		b.WriteString(f.ShimFunction("g_lock"))
 		b.WriteRune('\n')
 	}

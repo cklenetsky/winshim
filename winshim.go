@@ -11,20 +11,21 @@ import (
 	"strings"
 )
 
+// Return the AST as an array of strings, with the colorization removed
 func readAST(data []byte) []string {
 	uncolored := regexp.MustCompile(`\x1b\[[\d;]+m`).ReplaceAll(data, []byte{})
 	return strings.Split(string(uncolored), "\n")
 }
 
 // Start begins parsing an input file.
-func Start(inputFile string, outputFile string) error {
+func Start(inputFile string, outputFile string, moduleName string) error {
 
 	_, err := os.Stat(inputFile)
 	if err != nil {
 		return fmt.Errorf("Input file is not found")
 	}
 
-	// 2. Preprocess
+	// Preprocess
 	var pp []byte
 	{
 		// See : https://clang.llvm.org/docs/CommandGuide/clang.html
@@ -48,7 +49,7 @@ func Start(inputFile string, outputFile string) error {
 		return fmt.Errorf("writing to %s%cpp.c failed: %v", tmpDir, os.PathSeparator, err)
 	}
 
-	// 3. Generate AST from preprocessed file
+	// Generate AST from preprocessed file
 	astPP, err := exec.Command("clang", "-Xclang", "-ast-dump", "-fsyntax-only", ppFilePath).Output()
 	if err != nil {
 		// If clang fails it still prints out the AST, so we have to run it
@@ -63,7 +64,7 @@ func Start(inputFile string, outputFile string) error {
 	functions := make([]shimFunctionDefinition, 0)
 	index := 0
 
-	// 4. Parse functions and their parameters
+	// Parse functions and their parameters
 	inFunction := false
 	functionRegex := regexp.MustCompile(`FunctionDecl.*col:\d+ (?P<funcname>\w+) '(?P<rettype>[\w\s*]+)\(`)
 	functionAttributeRegex := regexp.MustCompile(`__attribute__\(\((?P<attribute>\w+)\)\)`)
@@ -92,16 +93,7 @@ func Start(inputFile string, outputFile string) error {
 		}
 	}
 
-	/*
-		for _, f := range functions {
-			if f.name != "" {
-				fmt.Println(f)
-				fmt.Println(f.FunctionPointerTypedef())
-			}
-		}
-	*/
-
-	// 5. Output new shim file
+	// Output new shim file
 	outFile, err := os.OpenFile(outputFile, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return err
@@ -148,12 +140,7 @@ func Start(inputFile string, outputFile string) error {
 		return err
 	}
 
-	err = writeInitFunction("ModuleName", "MODULE.DLL", functions, outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeNewline(outFile)
+	err = writeInitFunction(moduleName, functions, outFile)
 	if err != nil {
 		return err
 	}
@@ -177,33 +164,13 @@ func Start(inputFile string, outputFile string) error {
 	if err != nil {
 		return err
 	}
-	/*
-		err = transpiler.TranspileAST(args.inputFile, args.packageName, p, tree[0].(ast.Node))
-		if err != nil {
-			panic(err)
-		}
 
-		outputFilePath := args.outputFile
-
-		if outputFilePath == "" {
-			cleanFileName := filepath.Clean(filepath.Base(args.inputFile))
-			extension := filepath.Ext(args.inputFile)
-
-			outputFilePath = cleanFileName[0:len(cleanFileName)-len(extension)] + ".go"
-		}
-
-		err = ioutil.WriteFile(outputFilePath, []byte(p.String()), 0755)
-		if err != nil {
-			return fmt.Errorf("writing C output file failed: %v", err)
-		}
-	*/
 	return nil
 }
 
 func main() {
-
 	// Do the work
-	if err := Start(os.Args[1], os.Args[2]); err != nil {
+	if err := Start(os.Args[1], os.Args[2], os.Args[3]); err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
