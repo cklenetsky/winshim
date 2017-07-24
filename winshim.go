@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -25,32 +26,35 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 		return fmt.Errorf("Input file is not found")
 	}
 
+	inputFilePath, _ := filepath.Split(inputFile)
+
 	// Preprocess
+	var ppFilePath string
+
 	var pp []byte
-	{
-		// See : https://clang.llvm.org/docs/CommandGuide/clang.html
-		// clang -E <file>    Run the preprocessor stage.
-		cmd := exec.Command("clang", "-E", inputFile)
-		var out bytes.Buffer
-		var stderr bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &stderr
-		err = cmd.Run()
-		if err != nil {
-			return fmt.Errorf("preprocess failed: %v\nStdErr = %v", err, stderr.String())
-		}
-		pp = []byte(out.String())
+	// See : https://clang.llvm.org/docs/CommandGuide/clang.html
+	// clang -E <file>    Run the preprocessor stage.
+	cmd := exec.Command("clang", "-E", "-I", inputFilePath, "-I", ".", inputFile)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("preprocess failed: %v\nStdErr = %v", err, stderr.String())
 	}
+	pp = []byte(out.String())
 
 	tmpDir := os.TempDir()
-	ppFilePath := path.Join(tmpDir, "pp.c")
+	ppFilePath = path.Join(tmpDir, "pp.c")
+
 	err = ioutil.WriteFile(ppFilePath, pp, 0644)
 	if err != nil {
 		return fmt.Errorf("writing to %s%cpp.c failed: %v", tmpDir, os.PathSeparator, err)
 	}
 
 	// Generate AST from preprocessed file
-	astPP, err := exec.Command("clang", "-Xclang", "-ast-dump", "-fsyntax-only", ppFilePath).Output()
+	astPP, err := exec.Command("clang", "-Xclang", "-ast-dump", "-fsyntax-only", "-I", inputFilePath, "-I", ".", ppFilePath).Output()
 	if err != nil {
 		// If clang fails it still prints out the AST, so we have to run it
 		// again to get the real error.
@@ -150,7 +154,7 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 		return err
 	}
 
-	err = writeCleanupFunction("ModuleName", outFile)
+	err = writeCleanupFunction(moduleName, outFile)
 	if err != nil {
 		return err
 	}
@@ -169,6 +173,10 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 }
 
 func main() {
+	if len(os.Args) != 4 {
+		fmt.Printf("Usage: %s input_header_file output_c_file module_name\n", os.Args[0])
+		os.Exit(1)
+	}
 	// Do the work
 	if err := Start(os.Args[1], os.Args[2], os.Args[3]); err != nil {
 		fmt.Printf("Error: %v", err)
