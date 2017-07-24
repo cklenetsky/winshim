@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const makefileContents = `
+const makefileContents = `# This Makefile assumes that MinGW is in use and in the path
 WINLIB := lib%sshim.a
 WINLIBDEP := %s.c
 WINLIBOBJ := %s.o
@@ -16,7 +16,7 @@ CC := gcc
 CCFLAGS := -std=c99
 
 AR := ar
-ARFLAGS := arf
+ARFLAGS := crf
 
 $(WINLIB): $(WINLIBDEP)
 	$(CC) $(CCFLAGS) -c $(WINLIBDEP) -o $(WINLIBOBJ) -I %s
@@ -35,8 +35,11 @@ func writeMakefile(inputFilePath string, outputFileName string, output io.Writer
 		outputFileNameBase = outputFileName
 	}
 
+	// For MinGW, the filepath must be converted
+	convertedFilePath := strings.Replace(inputFilePath, "\\", "/", -1)
+
 	//
-	b.WriteString(fmt.Sprintf(makefileContents, outputFileNameBase, outputFileNameBase, outputFileNameBase, inputFilePath))
+	b.WriteString(fmt.Sprintf(makefileContents, outputFileNameBase, outputFileNameBase, outputFileNameBase, convertedFilePath))
 
 	_, err := output.Write(b.Bytes())
 	return err

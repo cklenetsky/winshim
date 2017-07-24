@@ -112,7 +112,7 @@ func (f shimFunctionDefinition) ShimFunction(lockVarName string) string {
 	b.WriteString(");\n")
 	b.WriteString(fmt.Sprintf("    ReleaseSRWLockShared(&%s);\n", lockVarName))
 	if f.returnType != "void" {
-		b.WriteString("    retun res;\n")
+		b.WriteString("    return res;\n")
 	}
 
 	b.WriteString("}\n")
