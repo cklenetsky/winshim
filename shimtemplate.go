@@ -55,17 +55,25 @@ func writeNewline(output io.Writer) error {
 	return err
 }
 
-func writeHeaderIncludes(output io.Writer) error {
-	_, err := output.Write([]byte(headers))
-	if err != nil {
-		return err
-	}
-	err = writeNewline(output)
-	if err != nil {
-		return err
-	}
-	_, err = output.Write([]byte(lockDefinition))
+func writeHeaderIncludes(includeName string, output io.Writer) error {
+	var b bytes.Buffer
 
+	_, err := b.WriteString(headers)
+	if err != nil {
+		return err
+	}
+
+	_, err = b.WriteString(fmt.Sprintf("#include <%s>\n\n", includeName))
+	if err != nil {
+		return err
+	}
+
+	_, err = b.WriteString(lockDefinition)
+	if err != nil {
+		return err
+	}
+
+	_, err = output.Write(b.Bytes())
 	return err
 }
 

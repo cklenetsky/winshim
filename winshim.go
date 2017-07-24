@@ -26,7 +26,7 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 		return fmt.Errorf("Input file is not found")
 	}
 
-	inputFilePath, _ := filepath.Split(inputFile)
+	inputFilePath, inputFileName := filepath.Split(inputFile)
 
 	// Preprocess
 	var ppFilePath string
@@ -104,7 +104,7 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 	}
 	defer outFile.Close()
 
-	err = writeHeaderIncludes(outFile)
+	err = writeHeaderIncludes(inputFileName, outFile)
 	if err != nil {
 		return err
 	}
@@ -165,6 +165,19 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 	}
 
 	err = writeShimFunctions(functions, outFile)
+	if err != nil {
+		return err
+	}
+
+	// Output new Makefile
+	outputFilePath, outputFileName := filepath.Split(outputFile)
+	makeFile, err := os.OpenFile(fmt.Sprintf("%s%cMakefile", outputFilePath, os.PathSeparator), os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	defer makeFile.Close()
+
+	err = writeMakefile(inputFilePath, outputFileName, makeFile)
 	if err != nil {
 		return err
 	}
