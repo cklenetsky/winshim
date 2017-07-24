@@ -14,8 +14,8 @@ package <INSERT PACKAGE NAME HERE>
 // #cgo CPPFLAGS: -I <INSERT PATH TO INCLUDE FILE HERE>
 // #cgo LDFLAGS: -L<INSERT PATH TO SHIM LIBRARY HERE> -lstdc++ -l%sshim
 //
-// Init%s(const char *libname);
-// Cleanup%s(void);
+// int Init%s(const char *libname);
+// int Cleanup%s(void);
 import "C"
 
 func loaderInit() {
