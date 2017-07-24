@@ -23,7 +23,7 @@ $(WINLIB): $(WINLIBDEP)
 	$(AR) $(ARFLAGS) $(WINLIB) $(WINLIBOBJ)
 `
 
-func writeMakefile(inputFilePath string, outputFileName string, output io.Writer) error {
+func writeMakefile(moduleName string, inputFilePath string, outputFileName string, output io.Writer) error {
 	var b bytes.Buffer
 
 	// Split outputfilename
@@ -39,7 +39,7 @@ func writeMakefile(inputFilePath string, outputFileName string, output io.Writer
 	convertedFilePath := strings.Replace(inputFilePath, "\\", "/", -1)
 
 	//
-	b.WriteString(fmt.Sprintf(makefileContents, outputFileNameBase, outputFileNameBase, outputFileNameBase, convertedFilePath))
+	b.WriteString(fmt.Sprintf(makefileContents, strings.ToLower(moduleName), outputFileNameBase, outputFileNameBase, convertedFilePath))
 
 	_, err := output.Write(b.Bytes())
 	return err

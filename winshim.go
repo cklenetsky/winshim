@@ -177,7 +177,30 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 	}
 	defer makeFile.Close()
 
-	err = writeMakefile(inputFilePath, outputFileName, makeFile)
+	err = writeMakefile(moduleName, inputFilePath, outputFileName, makeFile)
+	if err != nil {
+		return err
+	}
+
+	// Output go stub files
+	winGoFile, err := os.OpenFile(fmt.Sprintf("%s%c%sloader_windows.go", outputFilePath, os.PathSeparator, moduleName), os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	defer winGoFile.Close()
+
+	err = writeWindowsGoStub(moduleName, winGoFile)
+	if err != nil {
+		return err
+	}
+
+	otherGoFile, err := os.OpenFile(fmt.Sprintf("%s%c%sloader.go", outputFilePath, os.PathSeparator, moduleName), os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	defer otherGoFile.Close()
+
+	err = writeOtherGoStub(otherGoFile)
 	if err != nil {
 		return err
 	}
