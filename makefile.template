@@ -1,7 +1,7 @@
 # This Makefile assumes that MinGW is in use and in the path
 WINLIB := lib{{tolower .ModuleName}}shim.a
-WINLIBDEP := {{.FileNameBase}}.c
-WINLIBOBJ := {{.FileNameBase}}.o
+WINLIBDEP := {{filenamebase .OutputCFile}}.c
+WINLIBOBJ := {{filenamebase .OutputCFile}}.o
 
 CC := gcc
 CCFLAGS := -std=c99
@@ -10,5 +10,5 @@ AR := ar
 ARFLAGS := crf
 
 $(WINLIB): $(WINLIBDEP)
-	$(CC) $(CCFLAGS) -c $(WINLIBDEP) -o $(WINLIBOBJ) -I {{.ConvertedFilePath}}
+	$(CC) $(CCFLAGS) -c $(WINLIBDEP) -o $(WINLIBOBJ) -I {{filepathpath .SourceHeader | convertslash}}
 	$(AR) $(ARFLAGS) $(WINLIB) $(WINLIBOBJ)

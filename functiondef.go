@@ -18,7 +18,8 @@ type parsedFunctionDefinition struct {
 	Parameters []parameterDefinition
 }
 
-func (f parsedFunctionDefinition) FunctionSignature() string {
+// Signature returns the function's prototype signature, without the trailing semicolon
+func (f parsedFunctionDefinition) Signature() string {
 	var b bytes.Buffer
 	b.WriteString(fmt.Sprintf("%s ", f.ReturnType))
 	if f.Attribute != "" {
@@ -26,16 +27,19 @@ func (f parsedFunctionDefinition) FunctionSignature() string {
 	}
 	b.WriteString(f.Name)
 	b.WriteRune('(')
-	b.WriteString(f.FunctionParameters())
+	b.WriteString(f.ParameterList())
 	b.WriteRune(')')
 	return b.String()
 }
 
+// String returns a string representation of this function definition
 func (f parsedFunctionDefinition) String() string {
-	return f.FunctionSignature()
+	return f.Signature()
 }
 
-func (f parsedFunctionDefinition) FunctionParameters() string {
+// ParameterList returns this function's parameters in the form of
+// void|<type> <var name>[, <type> <var name>, ...]
+func (f parsedFunctionDefinition) ParameterList() string {
 	var b bytes.Buffer
 
 	if len(f.Parameters) == 0 {

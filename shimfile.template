@@ -1,5 +1,5 @@
 #include <windows.h>
-#include <{{.SourceHeader}}>
+#include <{{filepathfile .SourceHeader}}>
 
 // These are available in Vista and newer
 VOID WINAPI AcquireSRWLockShared(PSRWLOCK SRWLock);
@@ -10,7 +10,7 @@ VOID WINAPI ReleaseSRWLockExclusive(PSRWLOCK SRWLock);
 static SRWLOCK g_lock = SRWLOCK_INIT;
 
 {{range $i, $f := .Functions -}}
-typedef {{$f.ReturnType}} ({{if $f.Attribute}}__{{$f.Attribute}}{{end}} *f_{{$f.Name}}_t)({{$f.FunctionParameters}});
+typedef {{$f.ReturnType}} ({{if $f.Attribute}}__{{$f.Attribute}}{{end}} *f_{{$f.Name}}_t)({{$f.ParameterList}});
 {{end}}
 {{range $i, $f := .Functions -}}
 static f_{{$f.Name}}_t fp{{$f.Name}} = NULL;
@@ -61,7 +61,7 @@ int Cleanup{{.ModuleName}}(void) {
     }
 }
 {{range $i, $f := .Functions}}
-{{$f.ReturnType}} {{if $f.Attribute}}__{{$f.Attribute}}{{end}} {{$f.Name}}({{$f.FunctionParameters}}) {
+{{$f.ReturnType}} {{if $f.Attribute}}__{{$f.Attribute}}{{end}} {{$f.Name}}({{$f.ParameterList}}) {
 	{{if ne $f.ReturnType "void" -}}{{$f.ReturnType}} res;
 	{{end -}}
     AcquireSRWLockShared(&g_lock);
