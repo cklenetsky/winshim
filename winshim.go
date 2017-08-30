@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 // Return the AST as an array of strings, with the colorization removed
@@ -65,7 +66,7 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 
 	lines := readAST(astPP)
 
-	functions := make([]shimFunctionDefinition, 0)
+	functions := make([]parsedFunctionDefinition, 0)
 	index := 0
 
 	// Parse functions and their parameters
@@ -77,7 +78,7 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 		if inFunction {
 			paramInfo := functionParamRegex.FindStringSubmatch(line)
 			if len(paramInfo) > 2 {
-				functions[index].parameters = append(functions[index].parameters, parameterDefinition{name: paramInfo[1], dataType: paramInfo[2]})
+				functions[index].Parameters = append(functions[index].Parameters, parameterDefinition{name: paramInfo[1], dataType: paramInfo[2]})
 			} else {
 				inFunction = false
 				index++
@@ -87,11 +88,11 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 			funcMatches := functionRegex.FindStringSubmatch(line)
 			if len(funcMatches) > 2 {
 				inFunction = true
-				functions = append(functions, shimFunctionDefinition{name: funcMatches[1],
-					returnType: strings.TrimSpace(funcMatches[2])})
+				functions = append(functions, parsedFunctionDefinition{Name: funcMatches[1],
+					ReturnType: strings.TrimSpace(funcMatches[2])})
 				attribute := functionAttributeRegex.FindStringSubmatch(line)
 				if len(attribute) > 1 {
-					functions[index].attribute = attribute[1]
+					functions[index].Attribute = attribute[1]
 				}
 			}
 		}
@@ -103,70 +104,22 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 		return err
 	}
 	defer outFile.Close()
-
-	err = writeHeaderIncludes(inputFileName, outFile)
-	if err != nil {
-		return err
+	funcMap := template.FuncMap{
+		"tolower": strings.ToLower,
 	}
-
-	err = writeNewline(outFile)
+	t, err := template.New("shimfile.template").Funcs(funcMap).ParseFiles("shimfile.template")
 	if err != nil {
-		return err
-	}
-
-	err = writeFunctionPointerVarTypes(functions, outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeNewline(outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeFunctionPointerVars(functions, outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeNewline(outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeGlobalHandleVar(outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeNewline(outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeInitFunction(moduleName, functions, outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeNewline(outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeCleanupFunction(moduleName, outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeNewline(outFile)
-	if err != nil {
-		return err
-	}
-
-	err = writeShimFunctions(functions, outFile)
-	if err != nil {
-		return err
+		fmt.Println(err)
+	} else {
+		stubStruct := module{
+			ModuleName:   moduleName,
+			SourceHeader: inputFileName,
+			Functions:    functions,
+		}
+		err = t.ExecuteTemplate(outFile, "shimfile.template", stubStruct)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	// Output new Makefile
@@ -200,7 +153,7 @@ func Start(inputFile string, outputFile string, moduleName string) error {
 	}
 	defer otherGoFile.Close()
 
-	err = writeOtherGoStub(otherGoFile)
+	err = writeOtherGoStub(moduleName, otherGoFile)
 	if err != nil {
 		return err
 	}

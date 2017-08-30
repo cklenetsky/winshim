@@ -1,0 +1,14 @@
+# This Makefile assumes that MinGW is in use and in the path
+WINLIB := lib{{tolower .ModuleName}}shim.a
+WINLIBDEP := {{.FileNameBase}}.c
+WINLIBOBJ := {{.FileNameBase}}.o
+
+CC := gcc
+CCFLAGS := -std=c99
+
+AR := ar
+ARFLAGS := crf
+
+$(WINLIB): $(WINLIBDEP)
+	$(CC) $(CCFLAGS) -c $(WINLIBDEP) -o $(WINLIBOBJ) -I {{.ConvertedFilePath}}
+	$(AR) $(ARFLAGS) $(WINLIB) $(WINLIBOBJ)

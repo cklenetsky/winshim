@@ -1,0 +1,21 @@
+// +build {{if not .Windows}}!{{- end}}windows
+
+package <INSERT PACKAGE NAME HERE>
+{{if .Windows}}
+// #cgo CPPFLAGS: -I <INSERT PATH TO INCLUDE FILE HERE>
+// #cgo LDFLAGS: -L<INSERT PATH TO SHIM LIBRARY HERE> -lstdc++ -l{{tolower .ModuleName}}shim
+//
+// int Init{{.ModuleName}}(const char *libname);
+// int Cleanup{{.ModuleName}}(void);
+import "C"
+{{- else}}
+// Platforms other than Windows do not need the shim library.
+{{- end}}
+
+func loaderInit() {
+{{if .Windows}}	C.Init{{.ModuleName}}(C.CString("<INSERT DLL FILENAME HERE>")){{- end}}
+}
+
+func loaderDestroy() {
+{{if .Windows}}	C.Cleanup{{.ModuleName}}(){{- end}}
+}

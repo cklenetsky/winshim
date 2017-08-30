@@ -1,0 +1,72 @@
+#include <windows.h>
+#include <{{.SourceHeader}}>
+
+// These are available in Vista and newer
+VOID WINAPI AcquireSRWLockShared(PSRWLOCK SRWLock);
+VOID WINAPI ReleaseSRWLockShared(PSRWLOCK SRWLock);
+VOID WINAPI AcquireSRWLockExclusive(PSRWLOCK SRWLock);
+VOID WINAPI ReleaseSRWLockExclusive(PSRWLOCK SRWLock);
+
+static SRWLOCK g_lock = SRWLOCK_INIT;
+
+{{range $i, $f := .Functions -}}
+typedef {{$f.ReturnType}} ({{if $f.Attribute}}__{{$f.Attribute}}{{end}} *f_{{$f.Name}}_t)({{$f.FunctionParameters}});
+{{end}}
+{{range $i, $f := .Functions -}}
+static f_{{$f.Name}}_t fp{{$f.Name}} = NULL;
+{{end}}
+
+// Per Microsoft:
+// Simple reads and writes to properly aligned 64-bit variables are atomic on 
+// 64-bit Windows.    
+static HANDLE hLib = NULL;
+
+int Init{{.ModuleName}}(const char *libname) {
+
+	if (hLib != NULL)
+		return 0;
+
+	if (!libname || !libname[0])
+		return -1;
+
+	AcquireSRWLockExclusive(&g_lock);
+    if ((hLib = LoadLibrary(libname)) == NULL) {
+        ReleaseSRWLockExclusive(&g_lock);
+        return -1;
+    }
+
+	{{range $i, $f := .Functions -}}
+	fp{{$f.Name}} = (f_{{$f.Name}}_t) GetProcAddress(hLib, "{{$f.Name}}");
+	{{end}}
+
+	if ({{range $i, $f := .Functions}}
+		!fp{{$f.Name}} ||{{end}}
+	   ) {		
+		FreeLibrary(hLib);
+		hLib=NULL;
+		ReleaseSRWLockExclusive(&g_lock);
+		return -1;
+	}
+
+	ReleaseSRWLockExclusive(&g_lock);
+	return 0;
+}
+
+int Cleanup{{.ModuleName}}(void) {
+    if (hLib != NULL) {
+        AcquireSRWLockExclusive(&g_lock);
+        FreeLibrary(hLib);
+        hLib = NULL;
+        ReleaseSRWLockExclusive(&g_lock);
+    }
+}
+{{range $i, $f := .Functions}}
+{{$f.ReturnType}} {{if $f.Attribute}}__{{$f.Attribute}}{{end}} {{$f.Name}}({{$f.FunctionParameters}}) {
+	{{if ne $f.ReturnType "void" -}}{{$f.ReturnType}} res;
+	{{end -}}
+    AcquireSRWLockShared(&g_lock);
+    {{if ne $f.ReturnType "void"}}res = {{end}}fp{{$f.Name}};
+    ReleaseSRWLockShared(&g_lock);
+    {{if ne $f.ReturnType "void"}}return res;{{end}}
+}
+{{end}}
