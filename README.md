@@ -26,3 +26,8 @@ Makefile | the Makefile used to build the shim library.
 module_nameloader_windows.go | a .go file to be used with the integrating application.  Using cgo it calls into the shim library to initialize and clean up the shim library
 module_nameloader.go | a .go file to be used with the integrating application.  On non-Windows platforms it provides no-op functions mirroring those provided by module_nameloader_windows.go
 
+# TODOs
+This is an incomplete list of known things to add/improve
+* Error-checking of command-line inputs
+* More customization of behavior via command-line inputs
+* Using libclang instead of calling clang
