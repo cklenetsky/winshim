@@ -12,16 +12,17 @@ winshim relies on LLVM's clang to be installed and in the path.  clang is used t
 ## Usage
 d:>winshim.exe input_header_file output_c_file module_name
 
-input_header_file   the main C header file containing the API for the DLL
-output_c_file       the full path to the .c file to write.  All of the generated files will be written to this directory.
-module_name         a name for this DLL/module.  Only alphanumeric characters are allowed, as the name is used 
-                    in some of the generated functions.
+Parameter | Description
+--------- | -----------
+input_header_file | the main C header file containing the API for the DLL
+output_c_file | the full path to the .c file to write.  All of the generated files will be written to this directory.
+module_name | a name for this DLL/module.  Only alphanumeric characters are allowed, as the name is used in some of the generated functions.
 
 ## Results
-output_c_file                 the MinGW-compatible shim library file.
-Makefile                      the Makefile used to build the shim library.
-module_nameloader_windows.go  a .go file to be used with the integrating application.  Using cgo it calls into
-                              the shim library to initialize and clean up the shim library
-module_nameloader.go          a .go file to be used with the integrating application.  On non-Windows platforms
-                              it provides no-op functions mirroring those provided by module_nameloader_windows.go
+File | Description
+--------- | -----------
+output_c_file | the MinGW-compatible shim library file.
+Makefile | the Makefile used to build the shim library.
+module_nameloader_windows.go | a .go file to be used with the integrating application.  Using cgo it calls into the shim library to initialize and clean up the shim library
+module_nameloader.go | a .go file to be used with the integrating application.  On non-Windows platforms it provides no-op functions mirroring those provided by module_nameloader_windows.go
 
